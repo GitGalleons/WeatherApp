@@ -1,23 +1,34 @@
-const apiKey = '8a2c24326ccfff1c044b23261e7230f6';
-const cities = ['Dhaka','Rangpur', 'Chittagong', 'Sylhet', 'Rajshahi', 'Khulna'];
+const cities = [
+    { name: 'Dhaka', lat: 23.7104, lon: 90.4074 },
+    { name: 'Rangpur', lat: 25.7468, lon: 89.2517 },
+    { name: 'Chittagong', lat: 22.3384, lon: 91.8317 },
+    { name: 'Sylhet', lat: 24.8990, lon: 91.8717 },
+    { name: 'Rajshahi', lat: 24.3740, lon: 88.6011 },
+    { name: 'Khulna', lat: 22.8098, lon: 89.5644 }
+];
 let units = 'metric';
 
 const weatherCards = document.getElementById('weather-cards');
 const unitToggle = document.getElementById('unit-toggle');
 
-async function getCoordinates(city) {
-    const url = `https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${apiKey}`;
-    try {
-        const response = await fetch(url);
-        if (!response.ok) throw new Error('Geocoding API request failed');
-        const data = await response.json();
-        if (data.length === 0) throw new Error('City not found');
-        return { lat: data[0].lat, lon: data[0].lon };
-    } catch (error) {
-        console.error(`Error fetching coordinates for ${city}:`, error.message);
-        throw error;
-    }
-}
+// Map Open-Meteo weather codes to descriptions and OpenWeatherMap icons
+const weatherCodeMap = {
+    0: { description: 'Clear sky', icon: '01d' },
+    1: { description: 'Mainly clear', icon: '02d' },
+    2: { description: 'Partly cloudy', icon: '03d' },
+    3: { description: 'Overcast', icon: '04d' },
+    51: { description: 'Light drizzle', icon: '09d' },
+    53: { description: 'Moderate drizzle', icon: '09d' },
+    55: { description: 'Heavy drizzle', icon: '09d' },
+    61: { description: 'Light rain', icon: '10d' },
+    63: { description: 'Moderate rain', icon: '10d' },
+    65: { description: 'Heavy rain', icon: '10d' },
+    71: { description: 'Light snow', icon: '13d' },
+    73: { description: 'Moderate snow', icon: '13d' },
+    75: { description: 'Heavy snow', icon: '13d' },
+    95: { description: 'Thunderstorm', icon: '11d' },
+    default: { description: 'Unknown', icon: '50d' }
+};
 
 function getTempUnit() {
     return units === 'metric' ? '°C' : '°F';
@@ -26,9 +37,10 @@ function getTempUnit() {
 function createWeatherCard(city, data) {
     const card = document.createElement('div');
     card.classList.add('card');
-    const iconUrl = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
-    const temperature = Math.round(data.main.temp);
-    const condition = data.weather[0].description;
+    const weather = weatherCodeMap[data.current_weather.weathercode] || weatherCodeMap.default;
+    const iconUrl = `https://openweathermap.org/img/wn/${weather.icon}@2x.png`;
+    const temperature = Math.round(data.current_weather.temperature);
+    const condition = weather.description;
     card.innerHTML = `
         <img src="${iconUrl}" alt="${condition}">
         <h2>${city}</h2>
@@ -38,28 +50,27 @@ function createWeatherCard(city, data) {
     return card;
 }
 
-function createErrorCard(city) {
+function createErrorCard(city, errorMessage) {
     const card = document.createElement('div');
     card.classList.add('card', 'error');
     card.innerHTML = `
         <h2>${city}</h2>
-        <p>Error fetching weather</p>
+        <p>${errorMessage}</p>
     `;
     return card;
 }
 
-async function fetchWeather(city) {
+async function fetchWeather(cityObj) {
     try {
-        const { lat, lon } = await getCoordinates(city);
-        const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=${units}`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${cityObj.lat}&longitude=${cityObj.lon}&current_weather=true&temperature_unit=${units === 'metric' ? 'celsius' : 'fahrenheit'}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Weather API request failed');
+        if (!response.ok) throw new Error(`Weather API request failed: ${response.status}`);
         const data = await response.json();
-        if (data.cod !== 200) throw new Error(data.message);
-        return createWeatherCard(city, data);
+        if (!data.current_weather) throw new Error('No current weather data available');
+        return createWeatherCard(cityObj.name, data);
     } catch (error) {
-        console.error(`Error fetching weather for ${city}:`, error.message);
-        return createErrorCard(city);
+        console.error(`Error fetching weather for ${cityObj.name}:`, error.message);
+        return createErrorCard(cityObj.name, 'Error fetching weather');
     }
 }
 
