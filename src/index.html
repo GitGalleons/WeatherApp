@@ -1,17 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bangladesh Weather</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    <link rel="stylesheet" href="CSS/style.css">
 </head>
 <body>
-  <h1>Bangladesh Weather</h1>
-  <div class="toggle">
-    <button id="unit-toggle">Switch to °F</button>
-  </div>
-  <div id="weather-container"></div>
-  <script src="script.js"></script>
+    <div class="container">
+        <div class="toggle-container">
+            <label class="switch">
+                <input type="checkbox" id="unit-toggle">
+                <span class="slider round"></span>
+            </label>
+            <span class="toggle-label">Celsius / Fahrenheit</span>
+        </div>
+        <div id="weather-cards" class="weather-cards"></div>
+    </div>
+    <script src="js/app.js"></script>
 </body>
 </html>
